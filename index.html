@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Histogramas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            color: #1e40af;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .header h2 {
+            color: #3730a3;
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+        }
+
+        .header h3 {
+            color: #4338ca;
+            font-size: 1.125rem;
+            margin-bottom: 8px;
+        }
+
+        .header .author {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 16px 0 8px 0;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 48px 32px;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #3b82f6;
+            margin-bottom: 16px;
+        }
+
+        .upload-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+
+        .upload-description {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .file-info h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .file-info h2 i {
+            margin-right: 8px;
+        }
+
+        .file-stats {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .color-picker-container {
+            position: relative;
+        }
+
+        .color-picker-button {
+            width: 100%;
+            height: 48px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-picker-button:hover {
+            border-color: #3b82f6;
+        }
+
+        .color-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 8px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-picker-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 24px 0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+        }
+
+        .chart-title i {
+            margin-right: 8px;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            color: #3b82f6;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .chart-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>Fundamentos de Estadística</h1>
+                <h2>Capítulo 2: Estadística con Gráficos</h2>
+                <h3>2.4 Histogramas</h3>
+                <p class="author">Autor: Luis Corona Alcantar</p>
+            </div>
+            <h1 class="main-title">📊 Analizador de Histogramas</h1>
+            <p class="subtitle">Carga tu archivo CSV y crea histogramas interactivos con análisis estadístico</p>
+        </div>
+
+        <!-- Upload Area -->
+        <div id="uploadArea" class="card">
+            <div class="upload-area">
+                <div class="upload-icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <h2 class="upload-title">Cargar Archivo CSV</h2>
+                <p class="upload-description">
+                    Selecciona un archivo CSV con datos numéricos para análisis
+                </p>
+                
+                <input type="file" id="csvInput" accept=".csv" class="hidden">
+                <label for="csvInput" class="btn btn-primary">
+                    <i class="fas fa-upload"></i>
+                    <span id="uploadText">Seleccionar Archivo</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error hidden"></div>
+
+        <!-- Control Panel -->
+        <div id="controlPanel" class="card hidden">
+            <div class="control-panel">
+                <div class="file-info">
+                    <h2>
+                        <i class="fas fa-file-alt"></i>
+                        <span id="fileName">Archivo</span>
+                    </h2>
+                    <p class="file-stats" id="fileStats"></p>
+                </div>
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i>
+                    Nuevo Archivo
+                </button>
+            </div>
+
+            <div class="controls">
+                <div class="form-group">
+                    <label for="columnSelect">Columna para Analizar</label>
+                    <select id="columnSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label for="binsInput">Número de Bins</label>
+                    <input type="number" id="binsInput" min="5" max="50" value="15">
+                </div>
+                <div class="form-group">
+                    <label for="colorPicker">Color del Histograma</label>
+                    <div class="color-picker-container">
+                        <div class="color-picker-button" id="colorPickerButton">
+                            <div class="color-preview" id="colorPreview"></div>
+                            <span>Seleccionar Color</span>
+                            <input type="color" id="colorPicker" class="color-picker-input" value="#3b82f6">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div id="chartPanel" class="card hidden">
+            <div class="chart-header">
+                <h2 class="chart-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <span id="chartTitle">Histograma</span>
+                </h2>
+                <div class="chart-actions">
+                    <button id="downloadChart" class="btn btn-primary">
+                        <i class="fas fa-download"></i>
+                        Descargar Gráfico
+                    </button>
+                    <button id="downloadData" class="btn btn-success">
+                        <i class="fas fa-download"></i>
+                        Descargar Datos
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="histogramChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div id="tablePanel" class="card hidden">
+            <h2 class="chart-title">
+                <i class="fas fa-table"></i>
+                Tabla de Frecuencias
+            </h2>
+            
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Rango</th>
+                            <th>Marca de Clase</th>
+                            <th>Frecuencia</th>
+                            <th>Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let csvData = null;
+        let numericColumns = [];
+        let histogramData = [];
+        let chart = null;
+        let currentColor = '#3b82f6';
+
+        // Referencias a elementos del DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const csvInput = document.getElementById('csvInput');
+        const uploadText = document.getElementById('uploadText');
+        const errorMessage = document.getElementById('errorMessage');
+        const controlPanel = document.getElementById('controlPanel');
+        const chartPanel = document.getElementById('chartPanel');
+        const tablePanel = document.getElementById('tablePanel');
+        const fileName = document.getElementById('fileName');
+        const fileStats = document.getElementById('fileStats');
+        const columnSelect = document.getElementById('columnSelect');
+        const binsInput = document.getElementById('binsInput');
+        const chartTitle = document.getElementById('chartTitle');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadChart = document.getElementById('downloadChart');
+        const downloadData = document.getElementById('downloadData');
+        const tableBody = document.getElementById('tableBody');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorPreview = document.getElementById('colorPreview');
+
+        // Inicializar selector de colores
+        function initializeColorPicker() {
+            // Establecer color inicial
+            selectColor(currentColor);
+        }
+
+        // Función para seleccionar color
+        function selectColor(color) {
+            currentColor = color;
+            colorPicker.value = color;
+            colorPreview.style.backgroundColor = color;
+
+            // Actualizar gráfico si existe
+            if (chart) {
+                updateChart();
+            }
+        }
+
+        // Función para obtener color más oscuro para el borde
+        function getDarkerColor(color) {
+            const hex = color.replace('#', '');
+            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30);
+            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30);
+            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 30);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        // Función para mostrar errores
+        function showError(message) {
+            errorMessage.textContent = `❌ ${message}`;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Función para detectar columnas numéricas
+        function isNumericColumn(data, columnName) {
+            const sampleSize = Math.min(100, data.length);
+            let numericCount = 0;
+            
+            for (let i = 0; i < sampleSize; i++) {
+                const value = data[i][columnName];
+                if (value !== null && value !== undefined && value !== '') {
+                    const cleanValue = String(value).replace(/,/g, '');
+                    if (!isNaN(cleanValue) && !isNaN(parseFloat(cleanValue))) {
+                        numericCount++;
+                    }
+                }
+            }
+            
+            return (numericCount / sampleSize) > 0.7;
+        }
+
+        // Función para procesar archivo CSV
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            hideError();
+            uploadText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    try {
+                        if (results.errors.length > 0) {
+                            throw new Error('Error al procesar el archivo CSV');
+                        }
+
+                        const data = results.data;
+                        csvData = data;
+
+                        // Detectar columnas numéricas
+                        const columns = Object.keys(data[0] || {});
+                        const numeric = columns.filter(col => isNumericColumn(data, col));
+                        
+                        if (numeric.length === 0) {
+                            throw new Error('No se encontraron columnas numéricas en el archivo');
+                        }
+
+                        numericColumns = numeric;
+                        
+                        // Actualizar UI
+                        fileName.textContent = `Archivo: ${file.name}`;
+                        fileStats.textContent = `${data.length} filas • ${numeric.length} columna(s) numérica(s)`;
+                        
+                        // Llenar select de columnas
+                        columnSelect.innerHTML = '';
+                        numeric.forEach(col => {
+                            const option = document.createElement('option');
+                            option.value = col;
+                            option.textContent = col;
+                            columnSelect.appendChild(option);
+                        });
+
+                        // Mostrar paneles
+                        uploadArea.classList.add('hidden');
+                        controlPanel.classList.remove('hidden');
+                        
+                        // Crear histograma inicial
+                        createHistogram();
+                        
+                    } catch (err) {
+                        showError(err.message);
+                        uploadText.innerHTML = '<i class="fas fa-upload"></i> Seleccionar Archivo';
+                    }
+                },
+                error: function(error) {
+                    showError('Error al leer el archivo: ' + error.message);
+                    uploadText.innerHTML = '<i class="fas fa-upload"></i> Seleccionar Archivo';
+                }
+            });
+        }
+
+        // Función para crear histograma
+        function createHistogram() {
+            const selectedColumn = columnSelect.value;
+            if (!csvData || !selectedColumn) return;
+
+            try {
+                // Limpiar y convertir datos a números
+                const cleanData = csvData
+                    .map(row => {
+                        const value = row[selectedColumn];
+                        if (value === null || value === undefined || value === '') return null;
+                        const cleanValue = String(value).replace(/,/g, '');
+                        const numValue = parseFloat(cleanValue);
+                        return isNaN(numValue) ? null : numValue;
+                    })
+                    .filter(val => val !== null);
+
+                if (cleanData.length === 0) {
+                    showError('No hay datos válidos en la columna seleccionada');
+                    return;
+                }
+
+                const numBins = parseInt(binsInput.value) || 15;
+                
+                // Calcular rangos para el histograma
+                const min = Math.min(...cleanData);
+                const max = Math.max(...cleanData);
+                const binWidth = (max - min) / numBins;
+
+                // Crear bins
+                const bins = [];
+                for (let i = 0; i < numBins; i++) {
+                    const binStart = min + i * binWidth;
+                    const binEnd = min + (i + 1) * binWidth;
+                    const binCenter = (binStart + binEnd) / 2;
+                    
+                    bins.push({
+                        range: `${binStart.toFixed(1)} - ${binEnd.toFixed(1)}`,
+                        center: binCenter.toFixed(1),
+                        frequency: 0,
+                        start: binStart,
+                        end: binEnd
+                    });
+                }
+
+                // Contar frecuencias
+                cleanData.forEach(value => {
+                    let binIndex = Math.floor((value - min) / binWidth);
+                    if (binIndex >= numBins) binIndex = numBins - 1;
+                    bins[binIndex].frequency++;
+                });
+
+                histogramData = bins;
+                updateChart();
+                updateTable();
+                hideError();
+                
+            } catch (err) {
+                showError('Error al crear el histograma: ' + err.message);
+            }
+        }
+
+        // Función para actualizar el gráfico
+        function updateChart() {
+            const selectedColumn = columnSelect.value;
+            chartTitle.textContent = `Histograma de ${selectedColumn}`;
+            
+            const ctx = document.getElementById('histogramChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: histogramData.map(bin => bin.center),
+                    datasets: [{
+                        label: 'Frecuencia',
+                        data: histogramData.map(bin => bin.frequency),
+                        backgroundColor: currentColor,
+                        borderColor: getDarkerColor(currentColor),
+                        borderWidth: 1,
+                        categoryPercentage: 1.0,
+                        barPercentage: 1.0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return `Rango: ${histogramData[index].range}`;
+                                },
+                                label: function(context) {
+                                    return `Frecuencia: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Marca de Clase'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Frecuencia'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            chartPanel.classList.remove('hidden');
+        }
+
+        // Función para actualizar la tabla
+        function updateTable() {
+            const totalFreq = histogramData.reduce((sum, bin) => sum + bin.frequency, 0);
+            
+            tableBody.innerHTML = '';
+            histogramData.forEach(bin => {
+                const percentage = ((bin.frequency / totalFreq) * 100).toFixed(1);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${bin.range}</td>
+                    <td style="color: ${currentColor}; font-weight: 500;">${bin.center}</td>
+                    <td style="font-weight: 600;">${bin.frequency}</td>
+                    <td style="color: #6b7280;">${percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            tablePanel.classList.remove('hidden');
+        }
+
+        // Función para descargar el gráfico
+        function downloadChartImage() {
+            const canvas = document.getElementById('histogramChart');
+            const url = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `histograma_${columnSelect.value.replace(/\s+/g, '_')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Función para descargar datos del histograma
+        function downloadHistogramData() {
+            if (histogramData.length === 0) return;
+            
+            const csvContent = [
+                'Rango,Centro,Frecuencia',
+                ...histogramData.map(bin => `"${bin.range}",${bin.center},${bin.frequency}`)
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `datos_histograma_${columnSelect.value.replace(/\s+/g, '_')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Función para resetear la aplicación
+        function resetApp() {
+            csvData = null;
+            numericColumns = [];
+            histogramData = [];
+            
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            
+            csvInput.value = '';
+            uploadText.innerHTML = '<i class="fas fa-upload"></i> Seleccionar Archivo';
+            
+            uploadArea.classList.remove('hidden');
+            controlPanel.classList.add('hidden');
+            chartPanel.classList.add('hidden');
+            tablePanel.classList.add('hidden');
+            hideError();
+        }
+
+        // Event listeners
+        csvInput.addEventListener('change', handleFileUpload);
+        columnSelect.addEventListener('change', createHistogram);
+        binsInput.addEventListener('change', createHistogram);
+        colorPicker.addEventListener('change', (e) => selectColor(e.target.value));
+        resetBtn.addEventListener('click', resetApp);
+        downloadChart.addEventListener('click', downloadChartImage);
+        downloadData.addEventListener('click', downloadHistogramData);
+
+        // Inicializar la aplicación
+        initializeColorPicker();
+    </script>
+</body>
+</html>
